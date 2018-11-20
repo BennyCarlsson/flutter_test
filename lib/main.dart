@@ -7,19 +7,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "MY title",
+      title: "My title",
       home: RandomWords(),
+      theme: ThemeData(primaryColor: Colors.purple),
+      color: Colors.blue,
     );
   }
 }
 
 class RandomWords extends StatefulWidget {
   @override
-  RandomWordState createState() => new RandomWordState();
+  RandomWordState createState() => RandomWordState();
 }
 
 class RandomWordState extends State<RandomWords> {
-  final _suggestions = <WordPair>[];
+  final List<WordPair> _suggestions = <WordPair>[];
+  final Set<WordPair> _saved = Set<WordPair>();
   final _biggerFont = const TextStyle(fontSize: 18.0);
 
   Widget _buildSuggestions() {
@@ -39,12 +42,55 @@ class RandomWordState extends State<RandomWords> {
   }
 
   Widget _buildRow(WordPair pair) {
+    final bool alreadySaved = _saved.contains(pair);
     return ListTile(
       title: Text(
         pair.asPascalCase,
         style: _biggerFont,
       ),
+      trailing: Icon(
+        alreadySaved ? Icons.favorite : Icons.favorite_border,
+        color: alreadySaved ? Colors.red : null,
+      ),
+      onTap: () {
+        setState(() {
+          if (alreadySaved) {
+            _saved.remove(pair);
+          } else {
+            _saved.add(pair);
+          }
+        });
+      },
     );
+  }
+
+  void _pushSaved() {
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (BuildContext context) {
+      final Iterable<ListTile> tiles = _saved.map(
+        (WordPair pair) {
+          return ListTile(
+            title: Text(
+              pair.asPascalCase,
+              style: _biggerFont,
+            ),
+          );
+        },
+      );
+      final List<Widget> divided = ListTile.divideTiles(
+        context: context,
+        tiles: tiles,
+      ).toList();
+
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Saved Suggestions'),
+          iconTheme: IconThemeData(color: Colors.red),
+          backgroundColor: Colors.blue,
+        ),
+        body: new ListView(children: divided),
+      );
+    }));
   }
 
   @override
@@ -52,6 +98,9 @@ class RandomWordState extends State<RandomWords> {
     return Scaffold(
         appBar: AppBar(
           title: Text("Startup Name Generator"),
+          actions: <Widget>[
+            IconButton(icon: Icon(Icons.list), onPressed: _pushSaved),
+          ],
         ),
         body: _buildSuggestions());
   }
